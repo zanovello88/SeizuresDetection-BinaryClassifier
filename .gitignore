@@ -1,0 +1,8 @@
+# video raw / output
+Video/
+dataset_tesi_topi/
+dataset_tagliato/
+
+# file Python temporanei
+*.pyc
+__pycache__/
