@@ -1,6 +1,4 @@
 """
-preprocessing.py
-================
 Scopo: estrarre frame dai video grezzi e costruire un manifest JSON
        che associa ogni frame estratto alla sua label binaria (0=non crisi, 1=crisi).
 

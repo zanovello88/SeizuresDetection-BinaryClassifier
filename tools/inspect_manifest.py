@@ -1,6 +1,4 @@
 """
-inspect_manifest.py
-===================
 Scopo: strumento diagnostico da eseguire subito dopo preprocessing.py.
 Mostra per ogni video la distribuzione crisi/non-crisi e la durata
 effettiva della crisi in secondi, così puoi verificare visivamente
