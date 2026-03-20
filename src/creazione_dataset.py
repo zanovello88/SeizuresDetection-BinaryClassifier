@@ -87,7 +87,7 @@ def processa_riga_specifica():
     comando = [
         'ffmpeg', '-y', '-ss', str(start), '-i', path_in,
         '-t', str(durata),
-        '-vf', f"crop={W}:{H}:{235}:{100}",
+        '-vf', f"crop={W}:{H}:{145}:{280}",
         '-an', 
         '-c:v', 'libx264', '-crf', '18',
         path_out

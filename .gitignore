@@ -1,7 +1,9 @@
 # video raw / output
 Video/
 dataset_tesi_topi/
-dataset_tagliato/
+data/dataset_tagliato/
+data/frames
+data/manifest.json
 
 # file Python temporanei
 *.pyc
