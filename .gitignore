@@ -1,10 +1,18 @@
-# video raw / output
-Video/
-dataset_tesi_topi/
+# dati pesanti — non vanno su GitHub
+data/frames/
 data/dataset_tagliato/
-data/frames
-data/manifest.json
+*.mp4
+*.avi
 
-# file Python temporanei
-*.pyc
+# output training
+runs/
+
+# Python
 __pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# checkpoint PyTorch
+*.pt
+*.pth
