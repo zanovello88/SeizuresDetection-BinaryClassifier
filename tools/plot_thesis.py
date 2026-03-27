@@ -411,8 +411,8 @@ if __name__ == '__main__':
     print("2. Confronto metriche tra run...")
     plot_metrics_comparison()
 
-    print("3. Confronto smoothing...")
-    plot_smoothing_comparison()
+    print("3. Confronto smoothing — skip (richiede inferenza su GPU)")
+    print("   Usa i timeline già salvati in runs/20260327_101301/")
 
     print("4. Metriche event-level...")
     plot_event_metrics_comparison()
