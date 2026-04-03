@@ -18,3 +18,5 @@ matplotlib>=3.7.0
 
 # Utilities
 pathlib2>=2.3.7
+
+echo "openpyxl>=3.1.0" >> requirements.txt
