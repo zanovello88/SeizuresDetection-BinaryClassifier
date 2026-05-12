@@ -48,6 +48,7 @@ import numpy as np
 from collections import deque
 from datetime import datetime
 import csv
+import time
 
 SRC_DIR = Path(__file__).parent
 sys.path.insert(0, str(SRC_DIR))
@@ -574,12 +575,21 @@ class EpilepsyGUI:
     def _start_analysis(self):
         if not self.video_path or not self.roi or not self.model:
             messagebox.showwarning("Attenzione",
-                                   "Carica video e seleziona ROI prima.")
+                                "Carica video e seleziona ROI prima.")
             return
 
-        self.running = True
-        self.events  = []
-        self.events_filtered = []
+        # Reset completo dello stato — fondamentale per riproducibilità
+        self.running          = True
+        self.events           = []
+        self.events_filtered  = []
+
+        # Svuota la queue da eventuali messaggi residui del run precedente
+        while not self.msg_queue.empty():
+            try:
+                self.msg_queue.get_nowait()
+            except queue.Empty:
+                break
+
         self.btn_start.config(state='disabled')
         self.btn_stop.config(state='normal')
         self.btn_save_csv.config(state='disabled')
@@ -588,9 +598,9 @@ class EpilepsyGUI:
         self.var_progress_lbl.set("")
         self.lbl_results.config(text="Analisi in corso...", foreground='gray')
 
-        # avvia inferenza in thread separato
+        # Avvia inferenza in thread separato
         thread = threading.Thread(target=self._run_inference_thread,
-                                  daemon=True)
+                                daemon=True)
         thread.start()
 
     def _stop_analysis(self):
@@ -636,6 +646,10 @@ class EpilepsyGUI:
             last_prob     = 0.0
             events        = []
 
+            # Watchdog per sospensione PC
+            READ_TIMEOUT   = 30  # secondi
+            last_read_time = time.time()
+
             self.msg_queue.put(('log',
                 f"Inizio analisi — {total_frames} frame "
                 f"({total_frames/orig_fps:.1f}s)", 'info'))
@@ -644,9 +658,21 @@ class EpilepsyGUI:
                 if not self.running:
                     break
 
+                # Watchdog: controlla se il thread è bloccato da troppo tempo
+                # (es. PC in sospensione) prima di chiamare cap.read()
+                if time.time() - last_read_time > READ_TIMEOUT:
+                    self.msg_queue.put(('log',
+                        'Timeout lettura video (PC in sospensione?), '
+                        'analisi interrotta.', 'warn'))
+                    break
+
                 ret, frame_bgr = cap.read()
+
                 if not ret:
                     break
+
+                # Aggiorna il watchdog solo dopo una lettura riuscita
+                last_read_time = time.time()
 
                 if frame_idx % frame_step == 0:
                     crop = frame_bgr[y:y+h, x:x+w]
@@ -654,7 +680,7 @@ class EpilepsyGUI:
                         frame_idx += 1
                         continue
 
-                    crop_r = cv2.resize(crop, (CROP_SIZE, CROP_SIZE))
+                    crop_r   = cv2.resize(crop, (CROP_SIZE, CROP_SIZE))
                     crop_rgb = cv2.cvtColor(crop_r, cv2.COLOR_BGR2RGB)
                     tensor   = eval_transforms(Image.fromarray(crop_rgb))
                     frame_buffer.append(tensor)
@@ -680,7 +706,7 @@ class EpilepsyGUI:
                         stato    = "CRISI" if crisis_state else "normale"
                         self.msg_queue.put(('progress',
                             (pct, f"{pct:.0f}%  t={time_sec:.0f}s  "
-                                  f"P={last_prob:.3f}  {stato}")))
+                                f"P={last_prob:.3f}  {stato}")))
 
                     time_sec = frame_idx / orig_fps
 
@@ -692,13 +718,12 @@ class EpilepsyGUI:
                     # confidenza
                     if len(conf_buffer) >= conf_window_frames // 2:
                         cr = sum(1 for p in conf_buffer
-                                 if p >= threshold) / len(conf_buffer)
+                                if p >= threshold) / len(conf_buffer)
                     else:
                         cr = 0.0
 
                     if not crisis_state:
-                        if (last_prob >= threshold and
-                                cr >= conf_ratio):
+                        if (last_prob >= threshold and cr >= conf_ratio):
                             confirm_count += 1
                             if confirm_count >= confirm_fr:
                                 crisis_state  = True
